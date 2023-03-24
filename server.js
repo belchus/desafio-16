@@ -21,6 +21,7 @@ const MongoStore = require('connect-mongo')
 const mariaDB = require('./options/options');
 const sqlite3 = require('./options/options2')
 const numCPUs = require ('os').cpus().length
+const logger = require('./logger.js')
 
 
 app.engine('handlebars', engine({
@@ -33,20 +34,18 @@ app.use(express.static('public'))
 app.use(cookieParser())
 app.use(express.urlencoded({ extended: true }));
 app.use(flash())
+const advancedOptions = { useNewUrlParser: true, useUnifiedTopology: true }
 app.use(session({
     store: MongoStore.create({
-        mongoUrl: 'mongodb+srv://belshus:belen1234@cluster0.vu0bw1i.mongodb.net/test',
-        mongoOptions: {
-            useNewUrlParser: true,
-            useUnifiedTopology: true
-        }}),
-    secret: 'secret',
+        mongoUrl: process.env.MONGOURL,
+        mongoOptions: advancedOptions
+    }),
+    secret: process.env.SECRET,
     resave: false,
     saveUninitialized: false,
-    rolling: true,
     cookie:
     {
-        maxAge:30000
+        maxAge: 600000
     }
 }))
 
@@ -119,16 +118,19 @@ initializePassport(
 )
 
 app.get('/api/productos-test', auth, async (req, res) => {
+    logger.info(`ruta: '/api/productos-test' - método: get peticionada`)
     const { cant } = req.query
     res.render('test', { titulo: 'Pruebas de Productos aleatorios', lista: await prod.randomProducts(parseInt(cant)) })
 })
 
 app.get('/', auth, async (req, res) => {
-    res.render('main', { email: req.user.email, titulo: 'Index', lista: prod.getAll(), mensajes: chat.getAll() })
+    logger.info(`ruta: '/' - método: get peticionada`)
+    res.render('main', { email: req.user.email, titulo: 'Pagina principal', lista: prod.getAll(), mensajes: chat.getAll() })
 
 })
 
 app.get('/login', notAuth, (req, res) => {
+    logger.info(`ruta: '/login' - método: get peticionada`)
     res.render('login', { titulo: 'Login de usuario' })
 })
 
@@ -140,10 +142,12 @@ app.post('/login', notAuth, passport.authenticate('local', {
 
 
 app.get('/register', notAuth, (req, res) => {
+    logger.info(`ruta: '/register' - método: get peticionada`)
     res.render('register', { titulo: 'Registro de usuario nuevo' })
 })
 
 app.post('/register', notAuth, async (req, res) => {
+    logger.info(`ruta: '/register' - método: post peticionada`)
     if (usr.findUserById(req.body.email)) {
         res.render('register', { titulo: 'Registro de usuario nuevo', error: 'El usuario ya existe' })
     } else {
@@ -157,10 +161,12 @@ app.post('/register', notAuth, async (req, res) => {
 })
 
 app.get('/logout', auth, (req, res) => {
+    logger.info(`ruta: '/logout' - método: get peticionada`)
     res.render('logout', { usuario: req.user.email, titulo: 'cierre de sesión' })
 })
 
 app.get('/exit', auth, (req, res) => {
+    logger.info(`ruta: '/exit' - método: get peticionada`)
     req.logout(function (err) {
         if (err) { return next(err); }
         res.redirect('/');
@@ -168,13 +174,18 @@ app.get('/exit', auth, (req, res) => {
 })
 
 app.get('/info', (req, res) => {
+    logger.info(`ruta: '/info' - método: get peticionada`)
     res.render('info', { titulo: 'Info del Proceso' })
 })
 
-const routes = require ('./routers/rutas.js')
+const routes = require('./routers/rutas.js')
 
 app.use('/api/randoms', routes)
 
+app.get('*', (req, res) => {
+    logger.warn(`Error: 404 ruta no encontrada`)
+    res.json({ 'error': 'error 404, ruta no encontrada' })
+})
 
 function auth(req, res, next) {
     if (req.isAuthenticated()) {

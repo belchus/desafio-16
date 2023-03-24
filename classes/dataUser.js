@@ -1,8 +1,8 @@
 const mongoose = require('mongoose')
-const Users = require('../models/Users.js')
+const userModel = require('../models/users.js')
 const bcript = require('bcryptjs')
 
-module.exports = class dataUser {
+module.exports = class UserHandler {
     constructor(url) {
         this.url = url
     }
@@ -15,7 +15,7 @@ module.exports = class dataUser {
         try {
             mongoose.connect(this.url, connectionParams)
         } catch (error) {
-            console.log(error)
+            logger.error(error)
         }
     }
 
@@ -25,13 +25,13 @@ module.exports = class dataUser {
         if (user) {
             return null
         } else {
-            var newUser = new Users
+            var newUser = new userModel
             newUser.email = email
-            const pass = await bcript.hash(password, 15)
-            newUser.password = pass
-            newUser.save((error) => {
-                if (error) {
-                    console.error(error)
+            const encPass = await bcript.hash(password, 10)
+            newUser.password = encPass
+            newUser.save((err) => {
+                if (err) {
+                    logger.error(err)
                 }
             })
         }
@@ -39,13 +39,13 @@ module.exports = class dataUser {
 
     async findUserByMail(email) {
         this.connectDatabase()
-        const response = await Users.findOne({ email: email })
+        const response = await userModel.findOne({ email: email })
         return response
     }
 
     async findUserById(id) {
         this.connectDatabase()
-        const response = await Users.findOne({ id: id })
+        const response = await userModel.findOne({ id: id })
         return response
     }
 

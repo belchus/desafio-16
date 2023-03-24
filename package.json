@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "@faker-js/faker": "7.6.0",
+    "artillery": "^2.0.0-31",
     "bcryptjs": "2.4.3",
     "cluster": "^0.7.7",
     "connect-mongo": "4.6.0",
